@@ -5,5 +5,6 @@
 from . import pendulum_swingup
 from . import cartpole_discrete
 from . import cartpole_continuous
+from . import panda_object_pushing
 
 from . import robot_position_controller
