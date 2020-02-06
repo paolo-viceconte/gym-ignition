@@ -17,7 +17,7 @@ from gym_ignition.base.controllers import Controller, PositionControllerReferenc
 class RobotFeatures(robot_abc.RobotABC, robot_joints.RobotJoints, abc.ABC):
     pass
 
-
+"""
 def get_pybullet_cartpole_resources():
     pybullet = utils.PyBullet(physics_rate=100)
     cart_pole = utils.get_cartpole(pybullet)
@@ -28,7 +28,7 @@ def get_pybullet_cartpole_resources():
         kp=np.array([1500.0, 1500.0]), kd=np.array([10.0, 10.0]))
 
     return pybullet, controller, cart_pole
-
+"""
 
 def get_gazebo_cartpole_resources_python():
     gazebo = utils.Gazebo(physics_rate=100)
@@ -57,7 +57,7 @@ def get_gazebo_cartpole_resources_cpp():
 @pytest.mark.parametrize(
     "simulator,controller,cart_pole",
     [
-        get_pybullet_cartpole_resources(),
+        #get_pybullet_cartpole_resources(),
         get_gazebo_cartpole_resources_python(),
         get_gazebo_cartpole_resources_cpp(),
     ])
