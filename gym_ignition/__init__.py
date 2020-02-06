@@ -30,6 +30,7 @@ from gym_ignition.robots import sim
 from gym_ignition.tasks import pendulum_swingup
 from gym_ignition.tasks import cartpole_discrete
 from gym_ignition.tasks import cartpole_continuous
+from gym_ignition.tasks import panda_object_pushing
 
 # ======================
 # GYMPP C++ ENVIRONMENTS
@@ -86,6 +87,23 @@ register(
             'rtf': max_float,
             'agent_rate': 1000,
             'physics_rate': 1000,
+            'hard_reset': True,
+            })
+
+import gym_ignition_models as m
+panda_model = m.get_model_file('panda')
+
+register(
+    id='PandaObjectPushing-Gazebo-v0',
+    entry_point='gym_ignition.runtimes.gazebo_runtime:GazeboRuntime',
+    max_episode_steps=500000,
+    kwargs={'task_cls': panda_object_pushing.PandaObjectPushing,
+            'robot_cls': sim.gazebo.panda.PandaGazeboRobot,
+            'model': panda_model,
+            'world': "DefaultEmptyWorld.world",
+            'rtf': max_float, # max_float
+            'agent_rate': 1000, # 1000
+            'physics_rate': 1000, # 1000
             'hard_reset': True,
             })
 
