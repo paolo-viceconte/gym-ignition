@@ -5,3 +5,4 @@
 from . import icub
 from . import pendulum
 from . import cartpole
+from . import panda
