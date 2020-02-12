@@ -15,6 +15,8 @@ from gym_ignition.utils import gazebo_env_vars, resource_finder
 gazebo_env_vars.setup_gazebo_env_vars()
 resource_finder.add_path_from_env_var("IGN_GAZEBO_RESOURCE_PATH")
 
+import numpy as np
+
 # =========================
 # REGISTER THE ENVIRONMENTS
 # =========================
@@ -96,15 +98,17 @@ panda_model = m.get_model_file('panda')
 register(
     id='PandaObjectPushing-Gazebo-v0',
     entry_point='gym_ignition.runtimes.gazebo_runtime:GazeboRuntime',
-    max_episode_steps=500000,
+    max_episode_steps=5000000,
     kwargs={'task_cls': panda_object_pushing.PandaObjectPushing,
             'robot_cls': sim.gazebo.panda.PandaGazeboRobot,
             'model': panda_model,
-            'world': "DefaultEmptyWorld.world",
-            'rtf': max_float, # max_float
-            'agent_rate': 1000, # 1000
-            'physics_rate': 1000, # 1000
+            'world': "PushingPanda.world",
+            'rtf': max_float, #0.1
+            'agent_rate': 1000,
+            'physics_rate': 1000,
             'hard_reset': True,
+            'base_position': np.array([-0.5, 0, 1.015]), #[0, 0, 0]
+            #'floating': True, # keep it fixed
             })
 
 # =====================

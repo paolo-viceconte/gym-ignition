@@ -31,7 +31,6 @@ class PandaObjectPushing(task.Task, abc.ABC):
         # Store the requested robot features for this task
         self.robot_features = RobotFeatures
 
-        # should it be here????
         self.controller = None
 
         # Private attributes # NEEDED????
@@ -51,10 +50,15 @@ class PandaObjectPushing(task.Task, abc.ABC):
 
         # Convert to numpy arrays
         joints_limit_min = np.array(joints_limit_min)
-        joints_limit_max = np.array(joints_limit_max)
+        #joints_limit_max = np.array(joints_limit_max) # WRONG
+        joints_limit_max = np.array([0.04, 0.04, 2.8973, 1.7628, 2.8973, -0.0698, 2.8973, 3.7525, 2.8973])
 
-        print(joints_limit_min)
-        print(joints_limit_max)
+        # min_joint_limits
+        # [-0.001 -0.001 -2.8973 -1.7628 -2.8973 -3.0718 -2.8973 -0.0175 -2.8973]
+        # max_joint_limits
+        # [0.04   0.04   2.8973 1.7628 2.8973 0.0698 2.8973 3.7525 2.8973]
+        # diffs wrt original model
+        # [0.04   0.04   2.8973 1.7628 2.8973 "-0.0698" 2.8973 3.7525 2.8973]
 
         logger.debug("Creating action space")
         action_space = gym.spaces.Box(low=joints_limit_min,
@@ -63,16 +67,13 @@ class PandaObjectPushing(task.Task, abc.ABC):
 
         logger.debug("Creating observation space")
         observation_space = gym.spaces.Box(low=joints_limit_min,
-                                           high=joints_limit_max,  # shape=(1,) needed?
+                                           high=joints_limit_max,
                                            dtype=np.float32)
-
-        # controller
-        controlled_joints = [j for j in self.robot.joint_names() if not "_ft_" in j]
 
         self.controller = computed_torque_fixed_base.ComputedTorqueFixedBase(
             robot=self.robot,
             urdf=self.robot.model_file,
-            controlled_joints=controlled_joints,
+            controlled_joints=self.robot.joint_names(),
             kp=np.array([10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]),
             kd=np.array([10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]),
             clip_torques=False)
@@ -80,7 +81,7 @@ class PandaObjectPushing(task.Task, abc.ABC):
         ok_init = self.controller.initialize()
         assert ok_init
 
-        # # AFTER, extend observation!!!!!!!!!!!!!!
+        # # AFTER, extend observation for instance like:
         # high = np.array(
         #     [1.,  # cos(theta)
         #      1.,  # sin(theta)
@@ -94,7 +95,7 @@ class PandaObjectPushing(task.Task, abc.ABC):
         assert self.action_space.contains(action), \
             "%r (%s) invalid" % (action, type(action))
 
-        # Store the last action. It is used to calculate the reward.
+        # Store the last action. It is used to calculate the reward. # NEEDED???
         self._last_a = action
 
         position_reference = action
@@ -116,9 +117,6 @@ class PandaObjectPushing(task.Task, abc.ABC):
         return True
 
     def get_observation(self) -> Observation:
-
-        # Get the robot object # maybe better
-        #robot = self.robot
 
         # Get the new panda positions (maybe later velocities)
         positions_after_step = self.robot.joint_positions()
@@ -161,26 +159,23 @@ class PandaObjectPushing(task.Task, abc.ABC):
 
     def reset_task(self) -> bool:  # TODO
 
-        # # Sample the angular velocity from the observation space
-        # _, _, theta_dot = self.observation_space.sample().tolist()
-        #
-        # # Sample the angular position from an uniform rng
-        # theta = self.np_random.uniform(0, 2 * np.pi)
-        #
-        # try:
-        #     desired_control_mode = robot_joints.JointControlMode.TORQUE
-        #     if self.robot.joint_control_mode("pivot") != desired_control_mode:
-        #         ok_mode = self.robot.set_joint_control_mode("pivot", desired_control_mode)
-        #         assert ok_mode, "Failed to set pendulum control mode"
-        # except Exception:
-        #     logger.warn("Failed to set control mode. Is it supported by the runtime?")
-        #     pass
-        #
-        # # Reset the robot state
-        # ok_reset = self.robot.reset_joint("pivot", theta, theta_dot)
-        # assert ok_reset, "Failed to reset the pendulum"
-        #
-        # # Clean the last applied force
-        # self._last_a = None
+        joint_positions = self.action_space.sample()
+
+        # Reset the robot state
+        for idx, joint_name in enumerate(self.robot.joint_names()):
+            ok_reset = self.robot.reset_joint(joint_name, float(joint_positions[idx]), 0.0)
+            assert ok_reset, "Failed to reset the panda"
+
+        # reset controller (a new robot needs a new controller)
+        self.controller = computed_torque_fixed_base.ComputedTorqueFixedBase(
+            robot=self.robot,
+            urdf=self.robot.model_file,
+            controlled_joints=self.robot.joint_names(),
+            kp=np.array([10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]),
+            kd=np.array([10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]),
+            clip_torques=False)
+
+        ok_init = self.controller.initialize()
+        assert ok_init
 
         return True

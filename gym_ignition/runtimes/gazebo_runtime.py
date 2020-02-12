@@ -197,8 +197,11 @@ class GazeboRuntime(runtime.Runtime):
                 logger.debug("Hard reset: deleting the robot")
                 self.task.robot.delete_simulated_robot()
 
+                self.gazebo.run()
+
                 logger.debug("Hard reset: creating new robot")
                 self.task.robot = self._get_robot()
+
             else:
                 self._first_run = False
 

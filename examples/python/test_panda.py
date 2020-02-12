@@ -66,14 +66,13 @@ print("POST ROBOT")
 
 ok_gui = gazebo.gui()
 
-controlled_joints = [j for j in panda_robot.joint_names() if not "_ft_" in j]
 # ['panda_finger_joint1', 'panda_finger_joint2', 'panda_joint1', 'panda_joint2',
 # 'panda_joint3', 'panda_joint4', 'panda_joint5', 'panda_joint6', 'panda_joint7']
 
 controller = computed_torque_fixed_base.ComputedTorqueFixedBase(
     robot=panda_robot,
     urdf=panda_model,
-    controlled_joints=controlled_joints,
+    controlled_joints=panda_robot.joint_names(),
     kp=np.array([10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0]),
     kd=np.array([10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0]),
     clip_torques=False)
