@@ -109,7 +109,7 @@ register(
     entry_point='gym_ignition.runtimes.gazebo_runtime:GazeboRuntime',
     max_episode_steps=5000000,
     kwargs={'task_cls': panda_object_pushing.PandaObjectPushing,
-            'robot_cls': sim.gazebo.panda.PandaGazeboRobot,
+            'robot_cls': sim.gazebo.panda.PandaRobot,
             'model': panda_model,
             'world': "PushingPanda.world",
             'rtf': max_float, #0.1
