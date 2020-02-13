@@ -202,6 +202,23 @@ class GazeboRuntime(runtime.Runtime):
         ok_reset = self.task.reset_task()
         assert ok_reset, "Failed to reset the task"
 
+
+        # You cannot change this file which is generic, therefore the following modification cannot
+        # be used. Just keep it as a future reference
+
+        # # Check if the initial robot configuration is valid
+        # self.gazebo.run()
+        # links_in_contact=self.task.robot.links_in_contact()
+        # links_in_contact.remove('panda_link0') # link_0 is supposed to be in contact
+        # while links_in_contact!=[]:
+        #     print("INITIALIZED IN CONTACT: "+str(links_in_contact))
+        #     ok_reset = self.task.reset_task()
+        #     assert ok_reset, "Failed to reset the task"
+        #     self.gazebo.run()
+        #     links_in_contact = self.task.robot.links_in_contact()
+        #     links_in_contact.remove('panda_link0') # link_0 is supposed to be in contact
+        # # if the selected config is valid, should it be reset again?! NOT A GOOD SOLUTION
+
         # Get the observation
         observation = self.task.get_observation()
 
