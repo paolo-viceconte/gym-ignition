@@ -25,16 +25,15 @@ class RobotFeatures(robot_abc.RobotABC,
 
 class PandaObjectPushing(task.Task, abc.ABC):
 
-    def __init__(self, **kwargs) -> None:
-        super().__init__()
+    def __init__(self, agent_rate: float, **kwargs) -> None:
+        super().__init__(agent_rate=agent_rate)
 
         # Store the requested robot features for this task
         self.robot_features = RobotFeatures
 
         self.controller = None
 
-        # Private attributes # NEEDED????
-        self._last_a = None
+        self.goal_position = None
 
     def create_spaces(self) -> Tuple[ActionSpace, ObservationSpace]:
 
@@ -81,6 +80,15 @@ class PandaObjectPushing(task.Task, abc.ABC):
         ok_init = self.controller.initialize()
         assert ok_init
 
+        # # goal position
+        #
+        # logger.debug("Creating goal space")
+        # action_space = gym.spaces.Box(low=joints_limit_min,
+        #                               high=joints_limit_max,
+        #                               dtype=np.float32)
+        #
+        # self.goal_position =  # table size: 1.5 0.8, object initial pos: 0, 0, 1.04
+
         # # AFTER, extend observation for instance like:
         # high = np.array(
         #     [1.,  # cos(theta)
@@ -94,9 +102,6 @@ class PandaObjectPushing(task.Task, abc.ABC):
         # Validate the action
         assert self.action_space.contains(action), \
             "%r (%s) invalid" % (action, type(action))
-
-        # Store the last action. It is used to calculate the reward. # NEEDED???
-        self._last_a = action
 
         position_reference = action
 
@@ -119,7 +124,7 @@ class PandaObjectPushing(task.Task, abc.ABC):
     def get_observation(self) -> Observation:
 
         # Get the new panda positions (maybe later velocities)
-        positions_after_step = self.robot.joint_positions()
+        positions_after_step = np.array(self.robot.joint_positions())
 
         # Create the observation object
         observation = Observation(positions_after_step)
@@ -160,11 +165,15 @@ class PandaObjectPushing(task.Task, abc.ABC):
     def reset_task(self) -> bool:  # TODO
 
         joint_positions = self.action_space.sample()
+        # joint_positions = [0, 0, -2.8973, -1.7628, -2.8973, -2, 2.8973, 3.7525, -2.8973] # initialized in collision
 
         # Reset the robot state
         for idx, joint_name in enumerate(self.robot.joint_names()):
             ok_reset = self.robot.reset_joint(joint_name, float(joint_positions[idx]), 0.0)
             assert ok_reset, "Failed to reset the panda"
+
+        # in order to check if the robot has been initialized in collision, you need a forward kinematics class
+        # here (directly checking the contacts needs a physical step which we cannot perform here)
 
         # reset controller (a new robot needs a new controller)
         self.controller = computed_torque_fixed_base.ComputedTorqueFixedBase(
