@@ -121,8 +121,10 @@ class PyBulletRobot(robot.robot_abc.RobotABC,
     # PRIVATE METHODS AND PROPERTIES
     # ==============================
 
-    def delete_simulated_robot(self):
+    def delete_simulated_robot(self) -> None:
         if not self._pybullet or self._robot_id is None:
+            logger.warn("Failed to delete robot from the simulation. "
+                        "Simulator not running.")
             return
 
         # Remove the robot from the simulation
@@ -277,6 +279,8 @@ class PyBulletRobot(robot.robot_abc.RobotABC,
             return robot.robot_joints.JointType.FIXED
         elif joint_type_pybullet == pybullet.JOINT_REVOLUTE:
             return robot.robot_joints.JointType.REVOLUTE
+        elif joint_type_pybullet == pybullet.JOINT_PRISMATIC:
+            return robot.robot_joints.JointType.PRISMATIC
         else:
             raise Exception(f"Joint type '{joint_type_pybullet}' not yet supported")
 
@@ -349,6 +353,9 @@ class PyBulletRobot(robot.robot_abc.RobotABC,
         state = JointStatePyBullet._make(
             self._pybullet.getJointState(self._robot_id, joint_idx))
         return state.jointVelocity
+
+    def joint_force(self, joint_name: str) -> float:
+        raise NotImplementedError
 
     def joint_positions(self) -> List[float]:
         joint_states = self._pybullet.getJointStates(self._robot_id,

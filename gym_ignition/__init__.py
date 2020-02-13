@@ -2,13 +2,25 @@
 # This software may be modified and distributed under the terms of the
 # GNU Lesser General Public License v2.1 or any later version.
 
-# Import gympp bindings
+# Import SWIG bindings
 # See https://github.com/robotology/gym-ignition/issues/7
+#     https://stackoverflow.com/a/45473441/12150968
 import sys
 if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
-    import ctypes
-    sys.setdlopenflags(sys.getdlopenflags() | ctypes.RTLD_GLOBAL)
-import gympp_bindings
+    import os
+    dlopen_flags = sys.getdlopenflags()
+    if "gympp_bindings" not in sys.modules:
+        sys.setdlopenflags(dlopen_flags | os.RTLD_GLOBAL)
+    else:
+        sys.setdlopenflags(dlopen_flags | os.RTLD_LAZY | os.RTLD_NOLOAD | os.RTLD_GLOBAL)
+
+    import gympp_bindings
+
+    # Restore the flags
+    sys.setdlopenflags(dlopen_flags)
+else:
+    import gympp_bindings
+
 
 # Configure OS environment variables
 from gym_ignition.utils import gazebo_env_vars, resource_finder
@@ -61,7 +73,6 @@ register(
             'rtf': max_float,
             'agent_rate': 1000,
             'physics_rate': 1000,
-            'hard_reset': True,
             })
 
 register(
@@ -75,7 +86,6 @@ register(
             'rtf': max_float,
             'agent_rate': 1000,
             'physics_rate': 1000,
-            'hard_reset': True,
             })
 
 register(
@@ -89,7 +99,6 @@ register(
             'rtf': max_float,
             'agent_rate': 1000,
             'physics_rate': 1000,
-            'hard_reset': True,
             })
 
 import gym_ignition_models as m
@@ -126,7 +135,6 @@ register(
             'rtf': max_float,
             'agent_rate': 1000,
             'physics_rate': 1000,
-            'hard_reset': True,
             })
 
 register(
@@ -142,5 +150,4 @@ register(
             'rtf': max_float,
             'agent_rate': 1000,
             'physics_rate': 1000,
-            'hard_reset': True,
             })

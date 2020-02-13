@@ -33,6 +33,13 @@ namespace gympp {
         Velocity,
         Torque,
     };
+    enum class JointType
+    {
+        Invalid,
+        Fixed,
+        Revolute,
+        Prismatic,
+    };
 } // namespace gympp
 
 struct gympp::PID
@@ -113,6 +120,8 @@ public:
     virtual RobotName name() const = 0;
     virtual JointNames jointNames() const = 0;
 
+    virtual JointType jointType(const JointName& jointName) const = 0;
+    virtual double jointForce(const JointName& jointName) const = 0;
     virtual double jointPosition(const JointName& jointName) const = 0;
     virtual double jointVelocity(const JointName& jointName) const = 0;
     virtual JointControlMode jointControlMode(const JointName& jointName) const = 0;
@@ -164,7 +173,7 @@ public:
     virtual bool addExternalWrench(const LinkName& linkName,
                                    const std::array<double, 3>& force,
                                    const std::array<double, 3>& torque) = 0;
-    virtual bool update(const std::chrono::duration<double> time) = 0;
+    virtual bool update(const std::chrono::duration<double>& simTime) = 0;
 
     // ==============
     // RobotBaseFrame

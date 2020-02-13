@@ -5,9 +5,7 @@
 import os
 import time
 import numpy as np
-import pybullet_data
 from gym_ignition import base, robots
-from pybullet_utils import bullet_client
 from gym_ignition.base.robot import robot_abc
 from gym_ignition.utils import logger, resource_finder
 from gym_ignition.utils.typing import State, Action, Observation, SeedList
@@ -24,7 +22,6 @@ class PyBulletRuntime(base.runtime.Runtime):
                  physics_rate: float,
                  model: str = None,
                  world: str = "plane_implicit.urdf",
-                 hard_reset: bool = True,
                  **kwargs):
 
         # Save the keyworded arguments.
@@ -35,9 +32,8 @@ class PyBulletRuntime(base.runtime.Runtime):
         # Store the type of the class that provides Robot interface
         self._robot_cls = robot_cls
 
-        # Delete and create a new robot every environment reset
+        # Marks the first execution
         self._first_run = True
-        self._hard_reset = hard_reset
 
         # URDF or SDF model files
         self._world = world
@@ -74,7 +70,7 @@ class PyBulletRuntime(base.runtime.Runtime):
         logger.debug(f"Physics rate = {agent_rate * self._num_of_physics_steps} Hz")
 
         logger.debug("Initializing the Task")
-        task = task_cls(**kwargs)
+        task = task_cls(agent_rate=agent_rate, **kwargs)
 
         assert isinstance(task, base.task.Task), \
             "'task_cls' object must inherit from Task"
@@ -96,7 +92,7 @@ class PyBulletRuntime(base.runtime.Runtime):
     # =======================
 
     @property
-    def pybullet(self) -> bullet_client.BulletClient:
+    def pybullet(self):
         if self._pybullet is not None:
             return self._pybullet
 
@@ -104,15 +100,18 @@ class PyBulletRuntime(base.runtime.Runtime):
 
         if self._render_enabled:
             import pybullet
+            from pybullet_utils import bullet_client
             self._pybullet = bullet_client.BulletClient(pybullet.GUI)
         else:
             # Connects to an existing instance or, if it fails, creates an headless
             # simulation (DIRECT)
+            from pybullet_utils import bullet_client
             self._pybullet = bullet_client.BulletClient()
 
         assert self._pybullet, "Failed to create the bullet client"
 
         # Find the ground plane
+        import pybullet_data
         resource_finder.add_path(pybullet_data.getDataPath())
         world_abs_path = resource_finder.find_resource(self._world)
 
@@ -256,15 +255,19 @@ class PyBulletRuntime(base.runtime.Runtime):
         p = self.pybullet
         assert p, "PyBullet object not valid"
 
-        if self._hard_reset and self.task.has_robot():
-            if not self._first_run:
-                logger.debug("Hard reset: deleting the robot")
-                self.task.robot.delete_simulated_robot()
+        # Remove the robot and insert a new one
+        if not self._first_run:
+            logger.debug("Hard reset: deleting the robot")
+            self.task.robot.delete_simulated_robot()
 
-                logger.debug("Hard reset: creating new robot")
-                self.task.robot = self._get_robot()
-            else:
-                self._first_run = False
+            # Gazebo needs a dummy step to process model removal.
+            # This line unifies the behaviour of the simulators.
+            p.stepSimulation()
+
+            logger.debug("Hard reset: creating new robot")
+            self.task.robot = self._get_robot()
+        else:
+            self._first_run = False
 
         # Reset the environment
         ok_reset = self.task.reset_task()

@@ -38,6 +38,7 @@ class GazeboRobot(robot_abc.RobotABC,
         self._robot_name = None
         self._gympp_robot = None
         self._base_frame = None
+        self._joint_names = None
         self._controller_rate = controller_rate
 
         # Create a random prefix that will be used for the robot name
@@ -50,6 +51,8 @@ class GazeboRobot(robot_abc.RobotABC,
 
     def delete_simulated_robot(self) -> None:
         if not self._gazebo or not self._gympp_robot:
+            logger.warn("Failed to delete robot from the simulation. "
+                        "Simulator not running.")
             return
 
         # Remove the robot from the simulation
@@ -168,10 +171,26 @@ class GazeboRobot(robot_abc.RobotABC,
         return len(self.joint_names())
 
     def joint_names(self) -> List[str]:
-        return list(self.gympp_robot.jointNames())
+        if self._joint_names is None:
+            self._joint_names = list(self.gympp_robot.jointNames())
+
+        return self._joint_names
 
     def joint_type(self, joint_name: str) -> robot_joints.JointType:
-        raise NotImplementedError
+        joint_type = self.gympp_robot.jointType(joint_name)
+        assert joint_type != bindings.JointType_Invalid, \
+            f"Type of joint '{joint_name}' not valid"
+
+        if joint_type == bindings.JointType_Revolute:
+            return robot_joints.JointType.REVOLUTE
+        elif joint_type == bindings.JointType_Prismatic:
+            return robot_joints.JointType.PRISMATIC
+        elif joint_type == bindings.JointType_Fixed:
+            return robot_joints.JointType.FIXED
+        elif joint_type == bindings.JointType_Invalid:
+            return robot_joints.JointType.INVALID
+        else:
+            raise Exception(f"Failed to recognize type of joint '{joint_name}'")
 
     def joint_control_mode(self, joint_name: str) -> robot_joints.JointControlMode:
         return self._from_cpp_controlmode(self.gympp_robot.jointControlMode(joint_name))
@@ -188,8 +207,11 @@ class GazeboRobot(robot_abc.RobotABC,
     def joint_velocity(self, joint_name: str) -> float:
         return self.gympp_robot.jointVelocity(joint_name)
 
-    def joint_positions(self) -> np.ndarray:
-        return np.array(self.gympp_robot.jointPositions(), dtype=np.float)
+    def joint_force(self, joint_name: str) -> float:
+        return self.gympp_robot.jointForce(joint_name)
+
+    def joint_positions(self) -> List[float]:
+        return self.gympp_robot.jointPositions()
 
     def joint_velocities(self) -> np.ndarray:
         return np.array(self.gympp_robot.jointVelocities(), dtype=np.float)

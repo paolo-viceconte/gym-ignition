@@ -22,7 +22,6 @@ class GazeboRuntime(runtime.Runtime):
                  physics_rate: float,
                  model: str = None,
                  world: str = "DefaultEmptyWorld.world",
-                 hard_reset: bool = True,
                  **kwargs):
 
         # Save the keyworded arguments.
@@ -35,7 +34,6 @@ class GazeboRuntime(runtime.Runtime):
 
         # Delete and create a new robot every environment reset
         self._first_run = True
-        self._hard_reset = hard_reset
 
         # SDF files
         self._model = model
@@ -46,7 +44,7 @@ class GazeboRuntime(runtime.Runtime):
         self._physics_rate = physics_rate
         self._gazebo_wrapper = None
 
-        # Build the environment
+        # Create the Task object
         task = task_cls(agent_rate=agent_rate, **kwargs)
 
         assert isinstance(task, base.task.Task), \
@@ -187,23 +185,18 @@ class GazeboRuntime(runtime.Runtime):
         gazebo = self.gazebo
         assert gazebo, "Gazebo object not valid"
 
-        # Remove the model and insert it again. This is the reset strategy for
-        # floating-base robots. Resetting the joint state, instead, is sufficient to
-        # reset fixed-based robots. Though, while avoiding the model deletion might
-        # provide better performance, we should be sure that all the internal buffers
-        # (e.g. those related to the low-level PIDs) are correctly re-initialized.
-        if self._hard_reset and self.task.has_robot():
-            if not self._first_run:
-                logger.debug("Hard reset: deleting the robot")
-                self.task.robot.delete_simulated_robot()
+        # Remove the robot and insert a new one
+        if not self._first_run:
+            logger.debug("Hard reset: deleting the robot")
+            self.task.robot.delete_simulated_robot()
 
-                self.gazebo.run()
+            # Execute a dummy step to process model removal
+            self.gazebo.run()
 
-                logger.debug("Hard reset: creating new robot")
-                self.task.robot = self._get_robot()
-
-            else:
-                self._first_run = False
+            logger.debug("Hard reset: creating new robot")
+            self.task.robot = self._get_robot()
+        else:
+            self._first_run = False
 
         # Reset the environment
         ok_reset = self.task.reset_task()

@@ -49,6 +49,8 @@ public:
     RobotName name() const override;
     JointNames jointNames() const override;
 
+    JointType jointType(const JointName& jointName) const override;
+    double jointForce(const JointName& jointName) const override;
     double jointPosition(const JointName& jointName) const override;
     double jointVelocity(const JointName& jointName) const override;
     JointControlMode jointControlMode(const JointName& jointName) const override;
@@ -99,7 +101,7 @@ public:
     bool addExternalWrench(const LinkName& linkName,
                            const std::array<double, 3>& force,
                            const std::array<double, 3>& torque) override;
-    bool update(const std::chrono::duration<double> time) override;
+    bool update(const std::chrono::duration<double>& simTime) override;
 
     // ==============
     // RobotBaseFrame
